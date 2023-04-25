@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  neal-discord-bot:
+    build: .
+    image: neal-discord-bot
+    container_name: neal-discord-bot
+    env_file:
+      - .env
+    restart: unless-stopped
