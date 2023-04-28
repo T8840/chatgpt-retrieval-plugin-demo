@@ -3,7 +3,9 @@ import requests
 import os
 from secrets import DATABASE_INTERFACE_BEARER_TOKEN, HOST
 from secrets import SOURCE, SOURCE_ID
-SEARCH_TOP_K = 3
+from datetime import datetime
+
+SEARCH_TOP_K = 5
 
 
 def upsert_file(directory: str):
@@ -31,7 +33,7 @@ def upsert_file(directory: str):
                     + filename)
 
 
-def upsert(id: str, content: str):
+def upsert(id: str, content: str, source: str=SOURCE, source_id: int=SOURCE_ID, author: str="neal"):
     """
     Upload one piece of text to the database.
     """
@@ -41,6 +43,7 @@ def upsert(id: str, content: str):
         "Content-Type": "application/json",
         "Authorization": "Bearer " + DATABASE_INTERFACE_BEARER_TOKEN,
     }
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     data = {
       "documents": [
@@ -48,10 +51,10 @@ def upsert(id: str, content: str):
           "id": id,
           "text": content,
           "metadata": {
-            "source": SOURCE,
-            "source_id": SOURCE_ID,
-            # "created_at": "string",
-            "author": "neal"
+            "source": source,
+            "source_id": source_id,
+            "created_at": current_time,
+            "author": author
           }
         }
       ]
@@ -59,14 +62,14 @@ def upsert(id: str, content: str):
     response = requests.post(url, json=data, headers=headers, timeout=600)
 
     if response.status_code == 200:
-        print("uploaded successfully.")
+        print(f"{source_id} upsert successfully.")
     else:
         print(f"Error: {response.status_code} {response.content}")
 
 
-def query_database(query_prompt: str) -> Dict[str, Any]:
+def query_database(query_prompt: str, source: str = SOURCE, source_id : int = SOURCE_ID, top_k: int = SEARCH_TOP_K) -> Dict[str, Any]:
     """
-    Query vector database to retrieve chunk with user's input question.
+    Query vector database to retrieve chunk with user's input questions.
     """
     url = HOST + "/query"
     headers = {
@@ -74,23 +77,20 @@ def query_database(query_prompt: str) -> Dict[str, Any]:
         "accept": "application/json",
         "Authorization": f"Bearer {DATABASE_INTERFACE_BEARER_TOKEN}",
     }
-    # data = {"queries": [{"query": query_prompt, "top_k": SEARCH_TOP_K}]}
+    # data = {"queries": [{"query": query_prompt, "top_k": 5}]}
     data = {
-      "queries": [
-        {
-          "query": query_prompt,
-          "filter": {
-              "source": SOURCE
-              # "source_id": "string",
-              # "url": "string",
-              # "created_at": "string",
-              # "author": "string"
-          },
-          "top_k": SEARCH_TOP_K
-        }
-      ]
+        "queries": [
+            {
+                "query": query_prompt,
+                "filter": {
+                    "source": source,
+                    "source_id": source_id,
+                },
+                "top_k": top_k
+            }
+        ]
     }
-    response = requests.post(url, json=data, headers=headers, timeout=600)
+    response = requests.post(url, json=data, headers=headers)
 
     if response.status_code == 200:
         result = response.json()
@@ -118,6 +118,7 @@ if __name__ == "__main__":
     # upsert_file("./")
     content = "You can use my sample data. This is a fantasy world story made up by GPT from scratch. But feel free you use your own sample data. You may take a look at my data and check the format. It is just a list of text files in natural languages."
     discord_uuid = generate_uuid('discord', content)
-    # upsert(discord_uuid,content)
+    # upsert(discord_uuid,content,source="email",source_id=9999)
     # upsert("2","Good morning , the weather is very good")
-    print(query_database("what is the weather"))
+    # print(query_database("my sample data is what",source="email",source_id=9999))
+    print(query_database("my sample data is what"))

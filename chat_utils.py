@@ -2,42 +2,11 @@ from typing import Any, List, Dict
 import openai
 import requests
 import os
-
+from database_utils import query_database
 from secrets import DATABASE_INTERFACE_BEARER_TOKEN
 from secrets import OPENAI_API_KEY,HOST,SOURCE,SOURCE_ID
 import logging
 
-
-def query_database(query_prompt: str) -> Dict[str, Any]:
-    """
-    Query vector database to retrieve chunk with user's input questions.
-    """
-    url = HOST + "/query"
-    headers = {
-        "Content-Type": "application/json",
-        "accept": "application/json",
-        "Authorization": f"Bearer {DATABASE_INTERFACE_BEARER_TOKEN}",
-    }
-    # data = {"queries": [{"query": query_prompt, "top_k": 5}]}
-    data = {
-        "queries": [
-            {
-                "query": query_prompt,
-                "filter": {
-                    "source": SOURCE
-                },
-                "top_k": 5
-            }
-        ]
-    }
-    response = requests.post(url, json=data, headers=headers)
-
-    if response.status_code == 200:
-        result = response.json()
-        # process the result
-        return result
-    else:
-        raise ValueError(f"Error: {response.status_code} : {response.content}")
 
 
 def apply_prompt_template(question: str) -> str:
@@ -72,12 +41,12 @@ def call_chatgpt_api(user_question: str, chunks: List[str]) -> Dict[str, Any]:
     return response
 
 
-def ask(user_question: str) -> Dict[str, Any]:
+def ask(user_question: str, source_id : int = SOURCE_ID) -> Dict[str, Any]:
     """
     Handle user's questions.
     """
     # Get chunks from database.
-    chunks_response = query_database(user_question)
+    chunks_response = query_database(user_question,source_id=source_id)
     chunks = []
     for result in chunks_response["results"]:
         for inner_result in result["results"]:
