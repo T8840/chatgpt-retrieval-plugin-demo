@@ -4,6 +4,7 @@ from secrets import DISCORD_BOT_TOKEN as token
 from secrets import OPENAI_API_KEY
 from chat_utils import ask
 from database_utils import upsert,generate_uuid,upsert_file
+from aclient import client
 import openai
 import os
 import json
@@ -11,44 +12,37 @@ import logging
 import aiohttp
 openai.api_key = OPENAI_API_KEY
 
-
 def run_discord_bot():
-    # Create a new bot
-    intents = discord.Intents.default()
-    intents.message_content = True
-    bot = commands.Bot(command_prefix='!', intents=intents)
-
-
-    @bot.event
+    @client.event
     async def on_message(message):
 
-        if message.author == bot.user:
+        if message.author == client.user:
             return
 
-        if bot.user.mentioned_in(message):
+        if client.user.mentioned_in(message):
             # print("message",message)
             response = ask(message.content)
             await message.channel.send(response)
         else:
-            if message.author != bot.user:
+            if message.author != client.user:
                 pass
                 # discord_uuid = generate_uuid('discord', message.content)
                 # upsert(discord_uuid,message.content)
-            await bot.process_commands(message)
+            # await client.process_commands(message)
 
-    @bot.event
+    @client.event
     async def on_ready():
-        print(f'Logged into Discord as {bot.user}')
+        print(f'Logged into Discord as {client.user}')
         activity = discord.Game(name="chatgpt", type=3)
-        await bot.change_presence(status=discord.Status.online, activity=activity)
+        await client.change_presence(status=discord.Status.online, activity=activity)
 
 
-    @bot.command(name="helps")
+    @client.tree.command(name="helps")
     async def helps(ctx):
         await ctx.send(f"This is the help command!")
 
 
-    @bot.command(name='send', help='Send Message to the AI assistant.')
+    @client.tree.command(name='send', description='Send Message to the AI assistant.')
     async def send(ctx, *, message: str):
         server_id = ctx.guild.id
         server_name = ctx.guild.name
@@ -74,14 +68,14 @@ def run_discord_bot():
         # await ctx.send(f"{ctx.author.mention} 发送了: {message}，回复： {response['response']}")
 
 
-    @bot.command(name='chat', help='Talk to the AI assistant.')
-    async def chat(ctx, *, message: str):
-        server_id = str(ctx.guild.id)
-        server_name = ctx.guild.name
+    @client.tree.command(name='chat', description='Talk to the AI assistant.')
+    async def chat(interaction: discord.Interaction, message: str):
+        server_id = str(interaction.guild.id)
+        server_name = interaction.guild.name
         response = ask(message,source_id=server_id)
-        await ctx.send(f"{ctx.author.mention} {response}")
+        await client.send_message(f"{interaction} {response}")
 
-    @bot.command(name='upload', help='Upload file to AI assistant.')
+    @client.tree.command(name='upload', description='Upload file to AI assistant.')
     async def upload(ctx: commands.Context):
         server_id = str(ctx.guild.id)
         server_name = ctx.guild.name
@@ -125,7 +119,7 @@ def run_discord_bot():
         with open('responses.json', 'w') as f:
             json.dump(responses, f, indent=2)
 
-    @bot.event
+    @client.event
     async def on_guild_join(guild):
         print(f"Joined new server: {guild.name} with ID: {guild.id}")
 
@@ -137,8 +131,10 @@ def run_discord_bot():
         #
         # if general_channel:
         #     print(f"Found general channel with ID: {general_channel.id}")
-        #     await general_channel.send("Hello! I'm your new Discord bot!")
+        #     await general_channel.send("Hello! I'm your new Discord client!")
         # else:
         #     print("General channel not found.")
 
-    bot.run(token)
+
+
+    client.run(token)

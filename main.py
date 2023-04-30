@@ -1,12 +1,7 @@
-import logging
-import openai
-from chat_utils import ask
-from secrets import OPENAI_API_KEY
+from discord_bot import run_discord_bot
+from dotenv import load_dotenv
+import sys
 
-if __name__ == "__main__":
-    while True:
-        user_query = input("Enter your question: ")
-        openai.api_key = OPENAI_API_KEY
-        logging.basicConfig(level=logging.WARNING,
-                            format="%(asctime)s %(levelname)s %(message)s")
-        print(ask(user_query))
+
+if __name__ == '__main__':
+    run_discord_bot()
