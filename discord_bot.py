@@ -3,17 +3,18 @@ from discord.ext import commands # Import commands from discord.py
 from secrets import DISCORD_BOT_TOKEN as token
 from secrets import OPENAI_API_KEY
 from chat_utils import ask
-from database_utils import upsert,generate_uuid
+from database_utils import upsert,generate_uuid,upsert_file
 import openai
 import os
 import json
 import logging
+import aiohttp
 openai.api_key = OPENAI_API_KEY
 
 # Create a new bot
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_message(message):
@@ -44,12 +45,14 @@ async def helps(ctx):
     await ctx.send(f"This is the help command!")
 
 
-@bot.command(name='send', help='Talk to the AI assistant.')
+@bot.command(name='send', help='Send Message to the AI assistant.')
 async def send(ctx, *, message: str):
     server_id = ctx.guild.id
     server_name = ctx.guild.name
     discord_uuid = generate_uuid('discord_' + server_name, message)
     upsert(discord_uuid, content = message,source_id = int(server_id),author=ctx.author.name )
+    await ctx.send("Message received!")
+
     # responses = load_responses()
     # if str(server_id) not in responses:
     #     responses[str(server_id)] = {
@@ -70,17 +73,41 @@ async def send(ctx, *, message: str):
 
 @bot.command(name='chat', help='Talk to the AI assistant.')
 async def chat(ctx, *, message: str):
-    server_id = ctx.guild.id
+    server_id = str(ctx.guild.id)
     server_name = ctx.guild.name
     response = ask(message,source_id=server_id)
     await ctx.send(f"{ctx.author.mention} {response}")
 
-@bot.command(name='upload', help='Talk to the AI assistant.')
-async def upload(ctx, *, message: str):
-    server_id = ctx.guild.id
+@bot.command(name='upload', help='Upload file to AI assistant.')
+async def upload(ctx: commands.Context):
+    server_id = str(ctx.guild.id)
     server_name = ctx.guild.name
-    await ctx.send(f"{ctx.author.mention} 发送了: {message}，回复： use upload")
+    if len(ctx.message.attachments) > 0:
+        attachment = ctx.message.attachments[0]
+        file_url = attachment.url
+        file_name = attachment.filename
+        local_file_path = os.path.join("uploads", file_name)
 
+        async with aiohttp.ClientSession() as session:
+            async with session.get(file_url) as resp:
+                with open(local_file_path, "wb") as f:
+                    while True:
+                        chunk = await resp.content.read(1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+
+        await ctx.send("File received and saved!")
+        upsert_file(filename=file_name,source_id=server_id)
+    else:
+        await ctx.send("No file attached.")
+
+@upload.error
+async def upload_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("An error occurred: Missing required argument.")
+    else:
+        await ctx.send("An unexpected error occurred.")
 
 
 def load_responses():

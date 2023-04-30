@@ -1,0 +1,6 @@
+Chunking Techniques
+This simple consideration is the size of your chunk. A small chunk size makes it easy to search for the relevant piece of text, but the small chunk size may make the general contextual information of your text lost.
+
+It also includes considering more complicated chunking methods. For example, overlap chunking. Overlap chunking lets two consecutive chunk shares some overlap tokens. However, you then need to decide on the overlap length. Should it be a fixed number or a percentage? Can you do overlap not on the token level but paragraph level? How to chunk data that is not text-based, e.g. CSV file?
+
+There are lots of decisions you need to think about to build a large system. How to optimize your setting is dependent on your own use case experiments

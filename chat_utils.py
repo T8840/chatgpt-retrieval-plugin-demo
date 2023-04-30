@@ -3,8 +3,6 @@ import openai
 import requests
 import os
 from database_utils import query_database
-from secrets import DATABASE_INTERFACE_BEARER_TOKEN
-from secrets import OPENAI_API_KEY,HOST,SOURCE,SOURCE_ID
 import logging
 
 
@@ -41,7 +39,7 @@ def call_chatgpt_api(user_question: str, chunks: List[str]) -> Dict[str, Any]:
     return response
 
 
-def ask(user_question: str, source_id : int = SOURCE_ID) -> Dict[str, Any]:
+def ask(user_question: str, source_id : str = None) -> Dict[str, Any]:
     """
     Handle user's questions.
     """
