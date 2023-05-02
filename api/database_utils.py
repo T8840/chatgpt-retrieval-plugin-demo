@@ -139,6 +139,10 @@ def query_database(query_prompt: str, source: str = None, source_id : str = None
     else:
         raise ValueError(f"Error: {response.status_code} : {response.content}")
 
+def delete_database(source: str = None, source_id : str = None, author: str=None, top_k: int = SEARCH_TOP_K) -> Dict[str, Any]:
+    pass
+
+
 def generate_uuid(class_name: str, identifier: str,
                   test: str = 'teststrong') -> str:
     """ Generate a uuid based on an identifier

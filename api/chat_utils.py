@@ -2,7 +2,7 @@ from typing import Any, List, Dict
 import openai
 import requests
 import os
-from database_utils import query_database
+from api.database_utils import query_database
 import log
 logger = log.setup_logger(__name__)
 

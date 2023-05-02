@@ -1,6 +1,6 @@
 import logging
 import openai
-from chat_utils import ask
+from api.chat_utils import ask
 from secrets import OPENAI_API_KEY
 
 if __name__ == "__main__":
